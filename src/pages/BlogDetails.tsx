@@ -15,7 +15,7 @@ const BlogDetails: React.FC = () => {
       setError(null);
 
       try {
-        const response = await fetch(
+        const response = await fetch(   
           `https://trkpfyqlmd.execute-api.us-east-1.amazonaws.com/prod/blogs`
         );
 
