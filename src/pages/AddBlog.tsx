@@ -19,7 +19,7 @@ const AddBlog: React.FC = () => {
     };
 
     const newBlog = await blogsApi.create(blogData);
-    navigate(`/blogs/${newBlog.id}`);
+    navigate(`/blogs/${newBlog.blogId}`);
   };
 
   return (

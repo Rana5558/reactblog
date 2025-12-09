@@ -1,92 +1,98 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { blogsApi } from '../api/blogs';
 import { Blog } from '../types';
 
 const BlogDetails: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { blogId } = useParams<{ blogId: string }>();
   const navigate = useNavigate();
   const [blog, setBlog] = useState<Blog | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBlog = async () => {
-      if (!id) {
-        setError('Invalid blog ID');
-        setLoading(false);
-        return;
-      }
+      setLoading(true);
+      setError(null);
 
       try {
-        setLoading(true);
-        const data = await blogsApi.getById(id);
-        setBlog(data);
-        setError('');
+        const response = await fetch(
+          `https://trkpfyqlmd.execute-api.us-east-1.amazonaws.com/prod/blogs`
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data: Blog[] = await response.json();
+        const foundBlog = data.find((b) => b.blogId === blogId) || null;
+        setBlog(foundBlog);
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Failed to load blog. Please try again.');
+        console.error('Failed to load blog:', err);
+        setError('Failed to load blog. Please try again later.');
       } finally {
         setLoading(false);
       }
     };
 
     fetchBlog();
-  }, [id]);
+  }, [blogId]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center min-h-screen bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
-  if (error || !blog) {
+  if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-            {error || 'Blog not found'}
-          </div>
-          <button
-            onClick={() => navigate('/')}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
-          >
-            Back to Home
-          </button>
-        </div>
+      <div className="pt-24 min-h-screen flex flex-col items-center justify-center bg-gray-50">
+        <p className="text-red-600 text-lg mb-4">{error}</p>
+        <button
+          onClick={() => navigate('/')}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors duration-300"
+        >
+          Back to Home
+        </button>
+      </div>
+    );
+  }
+
+  if (!blog) {
+    return (
+      <div className="pt-24 min-h-screen flex flex-col items-center justify-center bg-gray-50">
+        <p className="text-red-600 text-lg mb-4">Blog not found</p>
+        <button
+          onClick={() => navigate('/')}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors duration-300"
+        >
+          Back to Home
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="pt-24 pb-12 min-h-screen bg-gray-50 flex flex-col items-center">
+      <div className="max-w-4xl w-full px-4 sm:px-6 lg:px-8 flex flex-col">
+        <article className="bg-white rounded-2xl shadow-md p-8 mb-8 transition-transform transform hover:-translate-y-1">
+          <h1 className="text-4xl font-bold mb-4 text-gray-900">{blog.title}</h1>
+          <p className="text-gray-600 mb-6">By {blog.author} ~</p>
+          <div className="prose max-w-none text-gray-700 whitespace-pre-wrap leading-relaxed">
+            {blog.content}
+          </div>
+        </article>
+
         <button
           onClick={() => navigate('/')}
-          className="mb-6 text-blue-600 hover:text-blue-800 font-medium"
+          className="self-center mt-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors duration-300"
         >
           ← Back to Home
         </button>
-
-        <article className="bg-white rounded-lg shadow-md p-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">{blog.title}</h1>
-          <div className="mb-6 pb-6 border-b border-gray-200">
-            <p className="text-gray-600">By {blog.author}</p>
-            {blog.createdAt && (
-              <p className="text-sm text-gray-500 mt-1">
-                Published on {new Date(blog.createdAt).toLocaleDateString()}
-              </p>
-            )}
-          </div>
-          <div className="prose max-w-none">
-            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{blog.content}</p>
-          </div>
-        </article>
       </div>
     </div>
   );
 };
 
 export default BlogDetails;
-
